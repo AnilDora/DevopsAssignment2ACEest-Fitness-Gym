@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ACEest Fitness & Gym{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+    }
+    .stat-card.green {
+        background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    }
+    .stat-card.blue {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    }
+    .stat-card.orange {
+        background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <!-- User Profile Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3><i class="bi bi-person-circle"></i> Welcome, {{ user.name }}!</h3>
+                    <p class="text-muted mb-0">Registration ID: {{ user.regn_id }}</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="badge bg-success fs-6">BMI: {{ user.bmi }}</div>
+                    <div class="badge bg-info fs-6 ms-2">BMR: {{ user.bmr }} kcal</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4" id="statsCards">
+        <div class="col-md-3">
+            <div class="stat-card green">
+                <h6 class="mb-2">Total Time</h6>
+                <h2 class="mb-0" id="totalTime">0 min</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card blue">
+                <h6 class="mb-2">Total Calories</h6>
+                <h2 class="mb-0" id="totalCalories">0 kcal</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card orange">
+                <h6 class="mb-2">Sessions</h6>
+                <h2 class="mb-0" id="totalSessions">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h6 class="mb-2">Last Workout</h6>
+                <h6 class="mb-0" id="lastWorkout">None</h6>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Add Workout Form -->
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Log Workout Session</h5>
+                </div>
+                <div class="card-body">
+                    <form id="workoutForm">
+                        <div class="mb-3">
+                            <label for="category" class="form-label fw-bold">Category</label>
+                            <select class="form-select" id="category" required>
+                                <option value="Warm-up">🔥 Warm-up</option>
+                                <option value="Workout" selected>💪 Workout</option>
+                                <option value="Cool-down">❄️ Cool-down</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="exercise" class="form-label fw-bold">Exercise Name</label>
+                            <input type="text" class="form-control" id="exercise" placeholder="e.g., Push-ups, Running" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="duration" class="form-label fw-bold">Duration (minutes)</label>
+                            <input type="number" class="form-control" id="duration" min="1" required>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Add Session
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Charts -->
+        <div class="col-lg-7 mb-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Progress Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="progressChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workout History -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Workout History</h5>
+        </div>
+        <div class="card-body">
+            <div id="workoutHistory">
+                <p class="text-muted text-center py-4">No workouts logged yet. Start by adding your first session!</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let progressChart = null;
+
+// Load workout data
+async function loadWorkoutData() {
+    try {
+        const response = await fetch('/api/workout/summary');
+        const data = await response.json();
+        
+        // Update stats cards
+        document.getElementById('totalTime').textContent = data.total_time + ' min';
+        document.getElementById('totalCalories').textContent = data.total_calories + ' kcal';
+        document.getElementById('totalSessions').textContent = data.session_count;
+        
+        // Update workout history
+        updateWorkoutHistory(data.categories);
+        
+        // Update chart
+        await updateChart();
+        
+    } catch (error) {
+        console.error('Error loading workout data:', error);
+    }
+}
+
+function updateWorkoutHistory(categories) {
+    const historyDiv = document.getElementById('workoutHistory');
+    let html = '';
+    
+    let hasWorkouts = false;
+    for (const [category, data] of Object.entries(categories)) {
+        if (data.sessions.length > 0) {
+            hasWorkouts = true;
+            html += `<div class="mb-4">
+                <h6 class="fw-bold text-primary">${category}</h6>
+                <div class="list-group">`;
+            
+            data.sessions.slice(-5).reverse().forEach(session => {
+                const date = new Date(session.timestamp).toLocaleString();
+                html += `<div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${session.exercise}</h6>
+                        <small class="text-muted">${date}</small>
+                    </div>
+                    <p class="mb-1">
+                        <span class="badge bg-success">${session.duration} min</span>
+                        <span class="badge bg-info">${session.calories} kcal</span>
+                    </p>
+                </div>`;
+            });
+            
+            html += `</div></div>`;
+        }
+    }
+    
+    if (!hasWorkouts) {
+        html = '<p class="text-muted text-center py-4">No workouts logged yet. Start by adding your first session!</p>';
+    }
+    
+    historyDiv.innerHTML = html;
+}
+
+async function updateChart() {
+    try {
+        const response = await fetch('/api/workout/progress');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        
+        if (progressChart) {
+            progressChart.destroy();
+        }
+        
+        progressChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.categories,
+                datasets: [{
+                    label: 'Duration (minutes)',
+                    data: data.durations,
+                    backgroundColor: [
+                        'rgba(33, 150, 243, 0.8)',
+                        'rgba(76, 175, 80, 0.8)',
+                        'rgba(255, 193, 7, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(33, 150, 243)',
+                        'rgb(76, 175, 80)',
+                        'rgb(255, 193, 7)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Workout Time Distribution'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error updating chart:', error);
+    }
+}
+
+// Add workout form submission
+document.getElementById('workoutForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        category: document.getElementById('category').value,
+        exercise: document.getElementById('exercise').value,
+        duration: document.getElementById('duration').value
+    };
+    
+    try {
+        const response = await fetch('/api/workout/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`${result.message}\nCalories burned: ${result.calories} kcal`);
+            document.getElementById('workoutForm').reset();
+            loadWorkoutData();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('An error occurred. Please try again.');
+        console.error('Error:', error);
+    }
+});
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadWorkoutData);
+</script>
+{% endblock %}

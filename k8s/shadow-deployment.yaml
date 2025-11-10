@@ -1,0 +1,179 @@
+# Shadow Deployment Strategy
+# Mirror production traffic to a shadow version for testing without affecting users
+
+---
+# Production Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-fitness-production
+  namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    version: production
+    deployment-strategy: shadow
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aceest-fitness
+      version: production
+  template:
+    metadata:
+      labels:
+        app: aceest-fitness
+        version: production
+    spec:
+      containers:
+      - name: aceest-fitness
+        image: yourdockerhub/aceest-fitness:v1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: VERSION
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# Shadow Deployment (receives mirrored traffic)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-fitness-shadow
+  namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    version: shadow
+    deployment-strategy: shadow
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aceest-fitness
+      version: shadow
+  template:
+    metadata:
+      labels:
+        app: aceest-fitness
+        version: shadow
+    spec:
+      containers:
+      - name: aceest-fitness
+        image: yourdockerhub/aceest-fitness:v2.0  # New version being tested
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: VERSION
+          value: "shadow"
+        - name: LOG_LEVEL
+          value: "DEBUG"  # More verbose logging for analysis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# Production Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-production
+  namespace: aceest-fitness
+spec:
+  type: LoadBalancer
+  selector:
+    app: aceest-fitness
+    version: production
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+
+---
+# Shadow Service (internal only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-shadow
+  namespace: aceest-fitness
+spec:
+  type: ClusterIP
+  selector:
+    app: aceest-fitness
+    version: shadow
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+
+---
+# Istio VirtualService for traffic mirroring
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aceest-fitness-shadow-vs
+  namespace: aceest-fitness
+spec:
+  hosts:
+  - aceest-fitness-production
+  http:
+  - route:
+    - destination:
+        host: aceest-fitness-production
+        port:
+          number: 80
+      weight: 100
+    mirror:
+      host: aceest-fitness-shadow
+      port:
+        number: 80
+    mirrorPercentage:
+      value: 100.0  # Mirror 100% of traffic to shadow
+
+---
+# DestinationRule for load balancing
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: aceest-fitness-shadow-dr
+  namespace: aceest-fitness
+spec:
+  host: aceest-fitness-production
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN

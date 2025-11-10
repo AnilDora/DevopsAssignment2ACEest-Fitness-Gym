@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Diet Guide - ACEest Fitness & Gym{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h2 class="mb-4"><i class="bi bi-egg-fried"></i> Nutritional Diet Guide</h2>
+    
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>Note:</strong> These are general recommendations. Consult with a nutritionist for personalized diet plans.
+    </div>
+
+    <div class="row g-4">
+        <!-- Weight Loss Diet -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">🎯 Weight Loss Focus</h5>
+                    <small>Calorie Deficit (1500-1800 kcal/day)</small>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Breakfast</h6>
+                    <ul>
+                        <li>Oatmeal with Berries (High Fiber)</li>
+                        <li>Green Tea</li>
+                        <li>Boiled Eggs (2)</li>
+                    </ul>
+
+                    <h6 class="text-primary">Lunch</h6>
+                    <ul>
+                        <li>Grilled Chicken/Tofu Salad</li>
+                        <li>Quinoa (small portion)</li>
+                        <li>Mixed Vegetables</li>
+                    </ul>
+
+                    <h6 class="text-primary">Snack</h6>
+                    <ul>
+                        <li>Apple or Carrot Sticks</li>
+                        <li>Handful of Almonds</li>
+                    </ul>
+
+                    <h6 class="text-primary">Dinner</h6>
+                    <ul>
+                        <li>Vegetable Soup with Lentils</li>
+                        <li>Grilled Fish</li>
+                        <li>Steamed Broccoli</li>
+                    </ul>
+
+                    <div class="alert alert-light mt-3">
+                        <strong>Key Tips:</strong>
+                        <ul class="mb-0">
+                            <li>Drink 8-10 glasses of water</li>
+                            <li>Avoid sugary drinks</li>
+                            <li>Eat smaller, frequent meals</li>
+                            <li>Track your calories</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Muscle Gain Diet -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">💪 Muscle Gain Focus</h5>
+                    <small>High Protein (2200-2800 kcal/day)</small>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Breakfast</h6>
+                    <ul>
+                        <li>3 Egg Omelet with Spinach</li>
+                        <li>Whole-wheat Toast (2 slices)</li>
+                        <li>Banana with Peanut Butter</li>
+                    </ul>
+
+                    <h6 class="text-primary">Lunch</h6>
+                    <ul>
+                        <li>Chicken Breast (200g)</li>
+                        <li>Brown Rice (1 cup)</li>
+                        <li>Steamed Vegetables</li>
+                    </ul>
+
+                    <h6 class="text-primary">Pre-Workout</h6>
+                    <ul>
+                        <li>Banana</li>
+                        <li>Protein Shake</li>
+                    </ul>
+
+                    <h6 class="text-primary">Post-Workout</h6>
+                    <ul>
+                        <li>Protein Shake (30g protein)</li>
+                        <li>Greek Yogurt with Nuts</li>
+                    </ul>
+
+                    <h6 class="text-primary">Dinner</h6>
+                    <ul>
+                        <li>Lean Beef or Salmon</li>
+                        <li>Sweet Potato</li>
+                        <li>Avocado Salad</li>
+                    </ul>
+
+                    <div class="alert alert-light mt-3">
+                        <strong>Key Tips:</strong>
+                        <ul class="mb-0">
+                            <li>1.6-2.2g protein per kg body weight</li>
+                            <li>Eat 5-6 meals per day</li>
+                            <li>Complex carbs around workouts</li>
+                            <li>Stay hydrated</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endurance Diet -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🏃 Endurance Focus</h5>
+                    <small>Complex Carbs (2000-2500 kcal/day)</small>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Breakfast</h6>
+                    <ul>
+                        <li>Whole Grain Pancakes</li>
+                        <li>Honey and Berries</li>
+                        <li>Orange Juice</li>
+                    </ul>
+
+                    <h6 class="text-primary">Pre-Workout</h6>
+                    <ul>
+                        <li>Banana with Peanut Butter</li>
+                        <li>Energy Bar</li>
+                    </ul>
+
+                    <h6 class="text-primary">Lunch</h6>
+                    <ul>
+                        <li>Whole Grain Pasta</li>
+                        <li>Light Tomato Sauce</li>
+                        <li>Grilled Chicken</li>
+                    </ul>
+
+                    <h6 class="text-primary">Snack</h6>
+                    <ul>
+                        <li>Trail Mix</li>
+                        <li>Dried Fruits</li>
+                    </ul>
+
+                    <h6 class="text-primary">Dinner</h6>
+                    <ul>
+                        <li>Salmon or Tuna</li>
+                        <li>Quinoa</li>
+                        <li>Avocado and Mixed Greens</li>
+                    </ul>
+
+                    <div class="alert alert-light mt-3">
+                        <strong>Key Tips:</strong>
+                        <ul class="mb-0">
+                            <li>55-65% carbs, 15-20% protein, 20-30% fats</li>
+                            <li>Carb-load before long sessions</li>
+                            <li>Electrolyte balance important</li>
+                            <li>Recovery nutrition crucial</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Macro Nutrient Guide -->
+    <div class="card mt-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Macronutrient Breakdown Guide</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Goal</th>
+                            <th>Protein</th>
+                            <th>Carbohydrates</th>
+                            <th>Fats</th>
+                            <th>Hydration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Weight Loss</strong></td>
+                            <td>30-35%</td>
+                            <td>40-45%</td>
+                            <td>20-25%</td>
+                            <td>3-4 liters/day</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Muscle Gain</strong></td>
+                            <td>30-35%</td>
+                            <td>45-50%</td>
+                            <td>20-25%</td>
+                            <td>3.5-4.5 liters/day</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Endurance</strong></td>
+                            <td>15-20%</td>
+                            <td>55-65%</td>
+                            <td>20-30%</td>
+                            <td>4-5 liters/day</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Maintenance</strong></td>
+                            <td>25-30%</td>
+                            <td>45-50%</td>
+                            <td>25-30%</td>
+                            <td>2.5-3 liters/day</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Foods to Include/Avoid -->
+    <div class="row g-4 mt-2">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Foods to Include</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><strong>Lean Proteins:</strong> Chicken, Fish, Eggs, Tofu, Lentils</li>
+                        <li><strong>Complex Carbs:</strong> Oats, Quinoa, Brown Rice, Sweet Potato</li>
+                        <li><strong>Healthy Fats:</strong> Avocado, Nuts, Olive Oil, Salmon</li>
+                        <li><strong>Vegetables:</strong> Broccoli, Spinach, Kale, Bell Peppers</li>
+                        <li><strong>Fruits:</strong> Berries, Bananas, Apples, Oranges</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-x-circle"></i> Foods to Limit/Avoid</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><strong>Processed Foods:</strong> Fast food, Packaged snacks</li>
+                        <li><strong>Sugary Drinks:</strong> Soda, Energy drinks, Sweetened juices</li>
+                        <li><strong>Refined Carbs:</strong> White bread, Pastries, Cookies</li>
+                        <li><strong>Trans Fats:</strong> Fried foods, Margarine</li>
+                        <li><strong>Excessive Alcohol:</strong> High in empty calories</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

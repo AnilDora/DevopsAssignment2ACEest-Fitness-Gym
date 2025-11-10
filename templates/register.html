@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ACEest Fitness & Gym{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-person-plus"></i> Create Your Account
+                </h2>
+                
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold">Full Name</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="regn_id" class="form-label fw-bold">Registration ID</label>
+                        <input type="text" class="form-control" id="regn_id" required>
+                        <div class="form-text">Unique identifier for your account</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="age" class="form-label fw-bold">Age</label>
+                            <input type="number" class="form-control" id="age" required min="10" max="120">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label fw-bold">Gender</label>
+                            <select class="form-select" id="gender" required>
+                                <option value="">Select...</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="height" class="form-label fw-bold">Height (cm)</label>
+                            <input type="number" class="form-control" id="height" required min="100" max="250" step="0.1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="weight" class="form-label fw-bold">Weight (kg)</label>
+                            <input type="number" class="form-control" id="weight" required min="30" max="300" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Register
+                        </button>
+                        <a href="/login" class="btn btn-outline-secondary">
+                            Already have an account? Login
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('name').value,
+        regn_id: document.getElementById('regn_id').value,
+        age: document.getElementById('age').value,
+        gender: document.getElementById('gender').value,
+        height: document.getElementById('height').value,
+        weight: document.getElementById('weight').value
+    };
+    
+    try {
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Registration successful!\n\nYour Health Metrics:\nBMI: ${result.bmi}\nBMR: ${result.bmr} kcal/day`);
+            window.location.href = '/dashboard';
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('An error occurred. Please try again.');
+        console.error('Error:', error);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Home - ACEest Fitness & Gym{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-3 fw-bold mb-4">
+        <i class="bi bi-heart-pulse text-danger"></i> Welcome to ACEest Fitness & Gym
+    </h1>
+    <p class="lead text-muted mb-5">
+        Your Personal Fitness Tracking & Management System
+    </p>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card p-4">
+                <div class="card-body">
+                    <i class="bi bi-clipboard-data fs-1 text-primary mb-3"></i>
+                    <h3 class="card-title">Track Workouts</h3>
+                    <p class="card-text text-muted">
+                        Log your exercises and monitor your progress with detailed analytics.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4">
+                <div class="card-body">
+                    <i class="bi bi-calendar-week fs-1 text-success mb-3"></i>
+                    <h3 class="card-title">Workout Plans</h3>
+                    <p class="card-text text-muted">
+                        Access personalized workout plans tailored to your fitness goals.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4">
+                <div class="card-body">
+                    <i class="bi bi-heart fs-1 text-danger mb-3"></i>
+                    <h3 class="card-title">Health Metrics</h3>
+                    <p class="card-text text-muted">
+                        Calculate BMI, BMR, and track your calories burned.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not session.user_id %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h3 class="mb-4">Get Started Today!</h3>
+                    <div class="d-grid gap-3">
+                        <a href="/register" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus"></i> Register Now
+                        </a>
+                        <a href="/login" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <a href="/dashboard" class="btn btn-primary btn-lg">
+                <i class="bi bi-speedometer2"></i> Go to Dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
