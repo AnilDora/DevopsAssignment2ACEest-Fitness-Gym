@@ -1,134 +1,108 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - ACEest Fitness & Gym{% endblock %}
+{% block title %}Dashboard - ACEest Fitness{% endblock %}
 
 {% block extra_css %}
 <style>
-    .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .stat-box {
+        background-color: #4CAF50;
         color: white;
-        border-radius: 15px;
         padding: 20px;
+        border-radius: 5px;
+        text-align: center;
     }
-    .stat-card.green {
-        background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    
+    .stat-box h3 {
+        color: white;
+        font-size: 32px;
+        margin: 10px 0;
     }
-    .stat-card.blue {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    }
-    .stat-card.orange {
-        background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    
+    .stat-box p {
+        color: white;
+        margin: 0;
+        font-size: 14px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="py-4">
-    <!-- User Profile Card -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h3><i class="bi bi-person-circle"></i> Welcome, {{ user.name }}!</h3>
-                    <p class="text-muted mb-0">Registration ID: {{ user.regn_id }}</p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="badge bg-success fs-6">BMI: {{ user.bmi }}</div>
-                    <div class="badge bg-info fs-6 ms-2">BMR: {{ user.bmr }} kcal</div>
-                </div>
-            </div>
-        </div>
+<h2>Dashboard</h2>
+
+<!-- User Info Card -->
+<div class="card">
+    <h3>Welcome, {{ user.name }}!</h3>
+    <p><strong>Registration ID:</strong> {{ user.regn_id }}</p>
+    <p><strong>BMI:</strong> {{ user.bmi }} | <strong>BMR:</strong> {{ user.bmr }} kcal/day</p>
+</div>
+
+<!-- Statistics -->
+<div class="grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat-box">
+        <p>Total Time</p>
+        <h3 id="totalTime">0</h3>
+        <p>minutes</p>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="row g-3 mb-4" id="statsCards">
-        <div class="col-md-3">
-            <div class="stat-card green">
-                <h6 class="mb-2">Total Time</h6>
-                <h2 class="mb-0" id="totalTime">0 min</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card blue">
-                <h6 class="mb-2">Total Calories</h6>
-                <h2 class="mb-0" id="totalCalories">0 kcal</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card orange">
-                <h6 class="mb-2">Sessions</h6>
-                <h2 class="mb-0" id="totalSessions">0</h2>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <h6 class="mb-2">Last Workout</h6>
-                <h6 class="mb-0" id="lastWorkout">None</h6>
-            </div>
-        </div>
+    
+    <div class="stat-box" style="background-color: #2196F3;">
+        <p>Total Calories</p>
+        <h3 id="totalCalories">0</h3>
+        <p>kcal burned</p>
     </div>
-
-    <div class="row">
-        <!-- Add Workout Form -->
-        <div class="col-lg-5 mb-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Log Workout Session</h5>
-                </div>
-                <div class="card-body">
-                    <form id="workoutForm">
-                        <div class="mb-3">
-                            <label for="category" class="form-label fw-bold">Category</label>
-                            <select class="form-select" id="category" required>
-                                <option value="Warm-up">🔥 Warm-up</option>
-                                <option value="Workout" selected>💪 Workout</option>
-                                <option value="Cool-down">❄️ Cool-down</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="exercise" class="form-label fw-bold">Exercise Name</label>
-                            <input type="text" class="form-control" id="exercise" placeholder="e.g., Push-ups, Running" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="duration" class="form-label fw-bold">Duration (minutes)</label>
-                            <input type="number" class="form-control" id="duration" min="1" required>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-circle"></i> Add Session
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Progress Charts -->
-        <div class="col-lg-7 mb-4">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Progress Overview</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="progressChart" width="400" height="250"></canvas>
-                </div>
-            </div>
-        </div>
+    
+    <div class="stat-box" style="background-color: #FF9800;">
+        <p>Sessions</p>
+        <h3 id="totalSessions">0</h3>
+        <p>workouts</p>
     </div>
+    
+    <div class="stat-box" style="background-color: #9C27B0;">
+        <p>Last Workout</p>
+        <h3 id="lastWorkout" style="font-size: 18px;">None</h3>
+    </div>
+</div>
 
-    <!-- Workout History -->
+<!-- Main Content Area -->
+<div class="grid" style="margin-top: 30px;">
+    <!-- Add Workout Form -->
     <div class="card">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Workout History</h5>
-        </div>
-        <div class="card-body">
-            <div id="workoutHistory">
-                <p class="text-muted text-center py-4">No workouts logged yet. Start by adding your first session!</p>
+        <h3>Log Workout Session</h3>
+        <form id="workoutForm">
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" required>
+                    <option value="Warm-up">Warm-up</option>
+                    <option value="Workout" selected>Workout</option>
+                    <option value="Cool-down">Cool-down</option>
+                </select>
             </div>
-        </div>
+            
+            <div class="form-group">
+                <label for="exercise">Exercise Name</label>
+                <input type="text" id="exercise" placeholder="e.g., Push-ups, Running" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Duration (minutes)</label>
+                <input type="number" id="duration" min="1" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Add Session</button>
+        </form>
+    </div>
+
+    <!-- Progress Chart -->
+    <div class="card">
+        <h3>Progress Chart</h3>
+        <canvas id="progressChart" width="400" height="250"></canvas>
+    </div>
+</div>
+
+<!-- Workout History -->
+<div class="card" style="margin-top: 30px;">
+    <h3>Workout History</h3>
+    <div id="workoutHistory">
+        <p style="text-align: center; color: #666; padding: 20px;">No workouts logged yet. Start by adding your first session above!</p>
     </div>
 </div>
 {% endblock %}
@@ -138,60 +112,46 @@
 <script>
 let progressChart = null;
 
-// Load workout data
 async function loadWorkoutData() {
     try {
         const response = await fetch('/api/workout/summary');
         const data = await response.json();
         
-        // Update stats cards
-        document.getElementById('totalTime').textContent = data.total_time + ' min';
-        document.getElementById('totalCalories').textContent = data.total_calories + ' kcal';
+        document.getElementById('totalTime').textContent = data.total_time;
+        document.getElementById('totalCalories').textContent = data.total_calories;
         document.getElementById('totalSessions').textContent = data.session_count;
         
-        // Update workout history
         updateWorkoutHistory(data.categories);
-        
-        // Update chart
         await updateChart();
-        
     } catch (error) {
-        console.error('Error loading workout data:', error);
+        console.error('Error:', error);
     }
 }
 
 function updateWorkoutHistory(categories) {
     const historyDiv = document.getElementById('workoutHistory');
-    let html = '';
+    let html = '<table><tr><th>Category</th><th>Exercise</th><th>Duration</th><th>Calories</th><th>Date</th></tr>';
     
     let hasWorkouts = false;
     for (const [category, data] of Object.entries(categories)) {
         if (data.sessions.length > 0) {
             hasWorkouts = true;
-            html += `<div class="mb-4">
-                <h6 class="fw-bold text-primary">${category}</h6>
-                <div class="list-group">`;
-            
-            data.sessions.slice(-5).reverse().forEach(session => {
+            data.sessions.slice(-10).reverse().forEach(session => {
                 const date = new Date(session.timestamp).toLocaleString();
-                html += `<div class="list-group-item">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">${session.exercise}</h6>
-                        <small class="text-muted">${date}</small>
-                    </div>
-                    <p class="mb-1">
-                        <span class="badge bg-success">${session.duration} min</span>
-                        <span class="badge bg-info">${session.calories} kcal</span>
-                    </p>
-                </div>`;
+                html += `<tr>
+                    <td>${category}</td>
+                    <td>${session.exercise}</td>
+                    <td>${session.duration} min</td>
+                    <td>${session.calories} kcal</td>
+                    <td>${date}</td>
+                </tr>`;
             });
-            
-            html += `</div></div>`;
         }
     }
+    html += '</table>';
     
     if (!hasWorkouts) {
-        html = '<p class="text-muted text-center py-4">No workouts logged yet. Start by adding your first session!</p>';
+        html = '<p style="text-align: center; color: #666; padding: 20px;">No workouts logged yet.</p>';
     }
     
     historyDiv.innerHTML = html;
@@ -215,49 +175,23 @@ async function updateChart() {
                 datasets: [{
                     label: 'Duration (minutes)',
                     data: data.durations,
-                    backgroundColor: [
-                        'rgba(33, 150, 243, 0.8)',
-                        'rgba(76, 175, 80, 0.8)',
-                        'rgba(255, 193, 7, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgb(33, 150, 243)',
-                        'rgb(76, 175, 80)',
-                        'rgb(255, 193, 7)'
-                    ],
-                    borderWidth: 2
+                    backgroundColor: ['#2196F3', '#4CAF50', '#FF9800']
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Minutes'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Workout Time Distribution'
+                        beginAtZero: true
                     }
                 }
             }
         });
     } catch (error) {
-        console.error('Error updating chart:', error);
+        console.error('Error:', error);
     }
 }
 
-// Add workout form submission
 document.getElementById('workoutForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -270,28 +204,24 @@ document.getElementById('workoutForm').addEventListener('submit', async (e) => {
     try {
         const response = await fetch('/api/workout/add', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(formData)
         });
         
         const result = await response.json();
         
         if (result.success) {
-            alert(`${result.message}\nCalories burned: ${result.calories} kcal`);
+            alert('Workout added! Calories burned: ' + result.calories + ' kcal');
             document.getElementById('workoutForm').reset();
             loadWorkoutData();
         } else {
             alert('Error: ' + result.message);
         }
     } catch (error) {
-        alert('An error occurred. Please try again.');
-        console.error('Error:', error);
+        alert('An error occurred.');
     }
 });
 
-// Load data on page load
 document.addEventListener('DOMContentLoaded', loadWorkoutData);
 </script>
 {% endblock %}

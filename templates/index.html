@@ -1,78 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Home - ACEest Fitness & Gym{% endblock %}
+{% block title %}Home - ACEest Fitness{% endblock %}
 
 {% block content %}
-<div class="text-center py-5">
-    <h1 class="display-3 fw-bold mb-4">
-        <i class="bi bi-heart-pulse text-danger"></i> Welcome to ACEest Fitness & Gym
-    </h1>
-    <p class="lead text-muted mb-5">
-        Your Personal Fitness Tracking & Management System
-    </p>
-
-    <div class="row g-4 mb-5">
-        <div class="col-md-4">
-            <div class="card p-4">
-                <div class="card-body">
-                    <i class="bi bi-clipboard-data fs-1 text-primary mb-3"></i>
-                    <h3 class="card-title">Track Workouts</h3>
-                    <p class="card-text text-muted">
-                        Log your exercises and monitor your progress with detailed analytics.
-                    </p>
-                </div>
-            </div>
+<div style="text-align: center;">
+    <h1>Welcome to ACEest Fitness & Gym Management System</h1>
+    <p style="font-size: 18px; color: #666; margin: 20px 0;">Track your fitness journey and achieve your health goals</p>
+    
+    <div class="grid" style="margin-top: 40px;">
+        <div class="card">
+            <h3>Track Workouts</h3>
+            <p>Log your daily exercises and monitor your progress with our easy-to-use tracking system.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card p-4">
-                <div class="card-body">
-                    <i class="bi bi-calendar-week fs-1 text-success mb-3"></i>
-                    <h3 class="card-title">Workout Plans</h3>
-                    <p class="card-text text-muted">
-                        Access personalized workout plans tailored to your fitness goals.
-                    </p>
-                </div>
-            </div>
+        
+        <div class="card">
+            <h3>Workout Plans</h3>
+            <p>Access customized workout plans designed for different fitness levels and goals.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card p-4">
-                <div class="card-body">
-                    <i class="bi bi-heart fs-1 text-danger mb-3"></i>
-                    <h3 class="card-title">Health Metrics</h3>
-                    <p class="card-text text-muted">
-                        Calculate BMI, BMR, and track your calories burned.
-                    </p>
-                </div>
-            </div>
+        
+        <div class="card">
+            <h3>Diet Guide</h3>
+            <p>Get nutrition advice and diet plans to complement your workout routine.</p>
         </div>
     </div>
-
-    {% if not session.user_id %}
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h3 class="mb-4">Get Started Today!</h3>
-                    <div class="d-grid gap-3">
-                        <a href="/register" class="btn btn-primary btn-lg">
-                            <i class="bi bi-person-plus"></i> Register Now
-                        </a>
-                        <a href="/login" class="btn btn-outline-secondary btn-lg">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    
+    <div style="margin-top: 40px;">
+        {% if session.user_id %}
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+        {% else %}
+            <a href="/register" class="btn btn-primary">Get Started</a>
+            <a href="/login" class="btn btn-secondary" style="margin-left: 10px;">Login</a>
+        {% endif %}
     </div>
-    {% else %}
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <a href="/dashboard" class="btn btn-primary btn-lg">
-                <i class="bi bi-speedometer2"></i> Go to Dashboard
-            </a>
-        </div>
+    
+    <div style="margin-top: 50px; padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+        <h3>Features</h3>
+        <ul style="text-align: left; max-width: 600px; margin: 20px auto;">
+            <li>BMI (Body Mass Index) Calculator</li>
+            <li>BMR (Basal Metabolic Rate) Calculation</li>
+            <li>Calorie Tracking</li>
+            <li>Workout Session Logging</li>
+            <li>Progress Charts</li>
+        </ul>
     </div>
-    {% endif %}
 </div>
 {% endblock %}
