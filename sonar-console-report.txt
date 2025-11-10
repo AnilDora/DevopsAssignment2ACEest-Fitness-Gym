@@ -1,0 +1,15 @@
+CODE QUALITY ANALYSIS REPORT
+Generated: 2025-11-10 23:33:15
+Project: ACEest Fitness & Gym Management System
+
+METRICS SUMMARY
+===============
+Code Coverage: 52.48%
+Code Quality Score: 7.14 / 10.0
+Style Issues: 65
+Security Issues (High): 0
+Security Issues (Medium): 0
+Average Complexity: 1.90
+Tests Passed: 26 / 26
+
+QUALITY GATE: FAILED
