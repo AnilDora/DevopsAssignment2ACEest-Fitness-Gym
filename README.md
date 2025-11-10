@@ -31,6 +31,15 @@
                      │  └──────────────┘  │
                      └────────────────────┘
 ```
+SONAR SCAN REPORT(Running locally):
+
+
+
+UNIT TEST CASE REPORT:
+
+![alt text](image-20.png)
+
+![alt text](image-19.png)
 
 DOCKER IMAGES:
 ![alt text](image-1.png)
@@ -78,13 +87,18 @@ SCALING PODS:
 
 BLUE GREEN DEPLOYMENT:
 
-![alt text](image-8.png)
 
-![alt text](image-10.png)
+![alt text](image-16.png)
 
-MINKUBE GET URLS FOR BLUE GREEN:
+CANARY DEPLOYMENT:
 
-![alt text](image-11.png)
+
+
+
+
+
+Shadow Deployment:
+
 
 
 
