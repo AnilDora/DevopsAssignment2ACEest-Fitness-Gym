@@ -1,7 +1,6 @@
-# Shadow Deployment Strategy
-# Deploy shadow version alongside production for testing without affecting users
-# NOTE: This version uses standard Kubernetes (no Istio required)
-# For traffic mirroring, you can use a sidecar proxy or manually test the shadow deployment
+# Shadow Deployment with Istio Traffic Mirroring
+# REQUIRES: Istio service mesh installed in your cluster
+# This enables true traffic mirroring without affecting production users
 
 ---
 # Production Deployment
@@ -13,7 +12,7 @@ metadata:
   labels:
     app: aceest-fitness
     version: production
-    deployment-strategy: shadow
+    deployment-strategy: shadow-istio
 spec:
   replicas: 3
   selector:
@@ -25,6 +24,8 @@ spec:
       labels:
         app: aceest-fitness
         version: production
+      annotations:
+        sidecar.istio.io/inject: "true"  # Enable Istio sidecar injection
     spec:
       containers:
       - name: aceest-fitness
@@ -65,7 +66,7 @@ metadata:
   labels:
     app: aceest-fitness
     version: shadow
-    deployment-strategy: shadow
+    deployment-strategy: shadow-istio
 spec:
   replicas: 2
   selector:
@@ -77,6 +78,8 @@ spec:
       labels:
         app: aceest-fitness
         version: shadow
+      annotations:
+        sidecar.istio.io/inject: "true"  # Enable Istio sidecar injection
     spec:
       containers:
       - name: aceest-fitness
@@ -122,12 +125,13 @@ spec:
     app: aceest-fitness
     version: production
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 5000
     protocol: TCP
 
 ---
-# Shadow Service (internal only)
+# Shadow Service (internal only, receives mirrored traffic)
 apiVersion: v1
 kind: Service
 metadata:
@@ -139,90 +143,111 @@ spec:
     app: aceest-fitness
     version: shadow
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 5000
     protocol: TCP
 
 ---
-# NetworkPolicy to allow shadow deployment to receive test traffic
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+# Istio VirtualService for traffic mirroring
+# This mirrors 100% of production traffic to shadow deployment
+# Shadow responses are discarded - users only see production responses
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
 metadata:
-  name: aceest-fitness-shadow-policy
+  name: aceest-fitness-shadow-vs
+  namespace: aceest-fitness
+  labels:
+    deployment-strategy: shadow-istio
+spec:
+  hosts:
+  - aceest-fitness-production
+  http:
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: aceest-fitness-production
+        port:
+          number: 80
+      weight: 100
+    mirror:
+      host: aceest-fitness-shadow
+      port:
+        number: 80
+    mirrorPercentage:
+      value: 100.0  # Mirror 100% of traffic to shadow
+
+---
+# DestinationRule for load balancing
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: aceest-fitness-shadow-dr
+  namespace: aceest-fitness
+  labels:
+    deployment-strategy: shadow-istio
+spec:
+  host: aceest-fitness-production
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+
+---
+# DestinationRule for shadow service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: aceest-fitness-shadow-shadow-dr
+  namespace: aceest-fitness
+  labels:
+    deployment-strategy: shadow-istio
+spec:
+  host: aceest-fitness-shadow
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+
+---
+# Gateway for external access (if using Istio Gateway)
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: aceest-fitness-gateway
   namespace: aceest-fitness
 spec:
-  podSelector:
-    matchLabels:
-      app: aceest-fitness
-      version: shadow
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: aceest-fitness
-    ports:
-    - protocol: TCP
-      port: 5000
+  selector:
+    istio: ingressgateway  # Use Istio's default ingress gateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
 
 ---
-# ConfigMap for testing shadow deployment
-apiVersion: v1
-kind: ConfigMap
+# VirtualService for Gateway routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
 metadata:
-  name: shadow-test-config
+  name: aceest-fitness-gateway-vs
   namespace: aceest-fitness
-data:
-  test-script.sh: |
-    #!/bin/bash
-    # Script to test shadow deployment
-    PRODUCTION_URL="http://aceest-fitness-production/health"
-    SHADOW_URL="http://aceest-fitness-shadow/health"
-    
-    echo "Testing Production:"
-    curl -s $PRODUCTION_URL
-    
-    echo -e "\n\nTesting Shadow:"
-    curl -s $SHADOW_URL
-    
-    echo -e "\n\nComparison complete!"
-
----
-# OPTIONAL: Uncomment below if you have Istio installed
-# ---
-# # Istio VirtualService for traffic mirroring
-# apiVersion: networking.istio.io/v1beta1
-# kind: VirtualService
-# metadata:
-#   name: aceest-fitness-shadow-vs
-#   namespace: aceest-fitness
-# spec:
-#   hosts:
-#   - aceest-fitness-production
-#   http:
-#   - route:
-#     - destination:
-#         host: aceest-fitness-production
-#         port:
-#           number: 80
-#       weight: 100
-#     mirror:
-#       host: aceest-fitness-shadow
-#       port:
-#         number: 80
-#     mirrorPercentage:
-#       value: 100.0  # Mirror 100% of traffic to shadow
-# 
-# ---
-# # DestinationRule for load balancing
-# apiVersion: networking.istio.io/v1beta1
-# kind: DestinationRule
-# metadata:
-#   name: aceest-fitness-shadow-dr
-#   namespace: aceest-fitness
-# spec:
-#   host: aceest-fitness-production
-#   trafficPolicy:
-#     loadBalancer:
-#       simple: ROUND_ROBIN
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - aceest-fitness-gateway
+  http:
+  - route:
+    - destination:
+        host: aceest-fitness-production
+        port:
+          number: 80

@@ -67,12 +67,12 @@ class TestCalculations:
     def test_calculate_bmr_male(self):
         """Test BMR calculation for male"""
         bmr = calculate_bmr(70, 175, 25, 'M')
-        assert bmr == 1693.75
+        assert bmr == 1673.75
     
     def test_calculate_bmr_female(self):
         """Test BMR calculation for female"""
         bmr = calculate_bmr(60, 165, 30, 'F')
-        assert bmr == 1356.25
+        assert bmr == 1320.25
     
     def test_calculate_calories(self):
         """Test calorie calculation"""
@@ -92,7 +92,7 @@ class TestAuthentication:
         """Test registration page loads"""
         response = client.get('/register')
         assert response.status_code == 200
-        assert b'Create Your Account' in response.data
+        assert b'User Registration' in response.data
     
     def test_register_post_success(self, client):
         """Test successful user registration"""

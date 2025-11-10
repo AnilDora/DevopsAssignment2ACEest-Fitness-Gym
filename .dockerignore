@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+test-results.xml
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (build artifacts)
+docs/_build/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+azure-pipelines.yml
+Jenkinsfile
+
+# Docker
+docker-compose.yml
+Dockerfile*
+.dockerignore
+
+# Kubernetes
+k8s/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts (not needed in image)
+quick-start.sh
+quick-start.ps1
+
+# Version files (old versions)
+ACEest_Fitness-V*.py
+ACEest_Fitness.py
+
+# Nginx (if separate container)
+nginx.conf
+
+# SonarQube
+sonar-project.properties
+.scannerwork/

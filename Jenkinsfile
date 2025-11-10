@@ -22,6 +22,18 @@ pipeline {
         // Version Configuration
         VERSION = "${env.BUILD_NUMBER}"
         IMAGE_TAG = "v${VERSION}"
+        
+        // Artifact Configuration
+        ARTIFACT_DIR = 'artifacts'
+        BUILD_ARTIFACT_NAME = "aceest-fitness-${VERSION}.tar.gz"
+    }
+    
+    triggers {
+        // Poll SCM every 5 minutes for changes
+        pollSCM('H/5 * * * *')
+        
+        // GitHub webhook trigger (recommended over polling)
+        githubPush()
     }
     
     options {
@@ -135,12 +147,73 @@ pipeline {
             }
         }
         
+        stage('Generate Build Artifacts') {
+            steps {
+                script {
+                    echo '📦 Generating build artifacts...'
+                    sh """
+                        # Create artifacts directory
+                        mkdir -p ${ARTIFACT_DIR}
+                        
+                        # Create version file
+                        cat > ${ARTIFACT_DIR}/version.txt << EOF
+Build Number: ${VERSION}
+Image Tag: ${IMAGE_TAG}
+Git Commit: ${env.GIT_COMMIT_SHORT}
+Build Date: \$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+Branch: ${env.BRANCH_NAME}
+Build URL: ${env.BUILD_URL}
+EOF
+                        
+                        # Package application source
+                        tar -czf ${ARTIFACT_DIR}/${BUILD_ARTIFACT_NAME} \
+                            --exclude='venv' \
+                            --exclude='__pycache__' \
+                            --exclude='.git' \
+                            --exclude='*.pyc' \
+                            --exclude='htmlcov' \
+                            --exclude='.pytest_cache' \
+                            --exclude='artifacts' \
+                            .
+                        
+                        # Copy test results
+                        cp test-results.xml ${ARTIFACT_DIR}/test-results-${VERSION}.xml
+                        cp coverage.xml ${ARTIFACT_DIR}/coverage-${VERSION}.xml
+                        cp -r htmlcov ${ARTIFACT_DIR}/coverage-report-${VERSION}
+                        
+                        # Generate checksum
+                        cd ${ARTIFACT_DIR}
+                        sha256sum ${BUILD_ARTIFACT_NAME} > ${BUILD_ARTIFACT_NAME}.sha256
+                        
+                        # List artifacts
+                        echo "📋 Generated artifacts:"
+                        ls -lh
+                    """
+                }
+            }
+            post {
+                always {
+                    // Archive artifacts
+                    archiveArtifacts artifacts: "${ARTIFACT_DIR}/**/*", 
+                                   fingerprint: true,
+                                   allowEmptyArchive: false
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
             steps {
                 script {
                     echo '🐳 Building Docker image...'
                     docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}")
                     docker.build("${DOCKER_IMAGE}:latest")
+                    
+                    // Save Docker image as artifact
+                    sh """
+                        mkdir -p ${ARTIFACT_DIR}
+                        docker save ${DOCKER_IMAGE}:${IMAGE_TAG} | gzip > ${ARTIFACT_DIR}/docker-image-${IMAGE_TAG}.tar.gz
+                        echo "Docker image saved to artifacts"
+                    """
                 }
             }
         }
@@ -253,6 +326,31 @@ pipeline {
         success {
             echo '✅ Pipeline completed successfully!'
             
+            script {
+                // Generate build summary
+                def buildSummary = """
+                ╔═══════════════════════════════════════════════════════════╗
+                ║                BUILD SUCCESSFUL                           ║
+                ╚═══════════════════════════════════════════════════════════╝
+                
+                Build Number: ${env.BUILD_NUMBER}
+                Version: ${IMAGE_TAG}
+                Git Commit: ${env.GIT_COMMIT_SHORT}
+                Branch: ${env.BRANCH_NAME}
+                
+                Artifacts Generated:
+                ✅ Source Package: ${BUILD_ARTIFACT_NAME}
+                ✅ Docker Image: docker-image-${IMAGE_TAG}.tar.gz
+                ✅ Test Results: test-results-${VERSION}.xml
+                ✅ Coverage Report: coverage-${VERSION}.xml
+                ✅ Version File: version.txt
+                
+                Download artifacts: ${env.BUILD_URL}artifact/
+                """
+                
+                echo buildSummary
+            }
+            
             // Send notification
             emailext(
                 subject: "✅ Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
@@ -263,7 +361,17 @@ pipeline {
                     <p><strong>Version:</strong> ${IMAGE_TAG}</p>
                     <p><strong>Commit:</strong> ${env.GIT_COMMIT_SHORT}</p>
                     <p><strong>Message:</strong> ${env.GIT_COMMIT_MSG}</p>
+                    
+                    <h3>Artifacts:</h3>
+                    <ul>
+                        <li>Source Package: ${BUILD_ARTIFACT_NAME}</li>
+                        <li>Docker Image: docker-image-${IMAGE_TAG}.tar.gz</li>
+                        <li>Test Results: test-results-${VERSION}.xml</li>
+                        <li>Coverage Report: coverage-${VERSION}.xml</li>
+                    </ul>
+                    
                     <p><a href="${env.BUILD_URL}">View Build</a></p>
+                    <p><a href="${env.BUILD_URL}artifact/">Download Artifacts</a></p>
                 """,
                 to: 'devops@aceest-fitness.com',
                 mimeType: 'text/html'
@@ -289,8 +397,24 @@ pipeline {
         }
         
         always {
-            // Cleanup
-            cleanWs()
+            // Generate build metadata
+            script {
+                def metadata = [
+                    buildNumber: env.BUILD_NUMBER,
+                    version: IMAGE_TAG,
+                    gitCommit: env.GIT_COMMIT_SHORT,
+                    branch: env.BRANCH_NAME,
+                    timestamp: new Date().format('yyyy-MM-dd HH:mm:ss'),
+                    status: currentBuild.result ?: 'SUCCESS'
+                ]
+                
+                writeJSON file: "${ARTIFACT_DIR}/build-metadata.json", json: metadata
+            }
+            
+            // Cleanup workspace but keep artifacts
+            cleanWs(deleteDirs: true, 
+                    notFailBuild: true,
+                    patterns: [[pattern: 'artifacts/**', type: 'EXCLUDE']])
         }
     }
 }

@@ -1,7 +1,7 @@
 # Multi-stage Docker build for ACEest Fitness Flask Application
 
 # Stage 1: Build Stage
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 LABEL maintainer="ACEest Fitness DevOps Team"
 LABEL version="2.0"

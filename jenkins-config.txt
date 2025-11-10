@@ -1,0 +1,72 @@
+# Jenkins Configuration Files
+# Copy these to your Jenkins setup
+
+# 1. GitHub Webhook Payload URL
+http://<your-jenkins-domain>:8080/github-webhook/
+
+# 2. Credentials IDs (configure in Jenkins)
+dockerhub-credentials
+github-credentials
+kubeconfig
+sonarqube-token
+
+# 3. Environment Variables (in Jenkinsfile)
+APP_NAME=aceest-fitness
+DOCKER_IMAGE=yourdockerhub/aceest-fitness
+VERSION=${BUILD_NUMBER}
+IMAGE_TAG=v${VERSION}
+
+# 4. SCM Polling Schedule
+# Poll every 5 minutes
+H/5 * * * *
+
+# Poll every 15 minutes
+H/15 * * * *
+
+# Poll every hour
+H * * * *
+
+# Poll once per day
+H H * * *
+
+# 5. Build Artifacts Path
+artifacts/
+├── aceest-fitness-{VERSION}.tar.gz
+├── aceest-fitness-{VERSION}.tar.gz.sha256
+├── docker-image-{VERSION}.tar.gz
+├── test-results-{VERSION}.xml
+├── coverage-{VERSION}.xml
+├── coverage-report-{VERSION}/
+├── version.txt
+└── build-metadata.json
+
+# 6. Jenkins Job Configuration (XML)
+# Export from: Jenkins → Job → Configure → Download Config
+
+# 7. Required Jenkins Plugins
+- git
+- github
+- docker-workflow
+- junit
+- htmlpublisher
+- sonar
+- kubernetes
+- email-ext
+- workflow-aggregator
+- timestamper
+- ws-cleanup
+
+# 8. GitHub Webhook Settings
+Payload URL: http://<jenkins>:8080/github-webhook/
+Content type: application/json
+Events: Push events, Pull requests
+Active: Yes
+
+# 9. Docker Registry Authentication
+docker login
+Username: <dockerhub-username>
+Password: <dockerhub-token>
+
+# 10. Kubernetes Config
+kubectl config view --minify --flatten > kubeconfig
+# Upload to Jenkins as secret file credential
