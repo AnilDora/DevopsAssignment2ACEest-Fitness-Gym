@@ -109,10 +109,10 @@ $pylintOutput = pylint app.py --output-format=text --score=yes 2>&1
 $pylintScore = 0
 
 foreach ($line in $pylintOutput -split "`n") {
-    if ($line -match "Your code has been rated at ([\d\.]+)/10") {
+    if ($line -match "Your code has been rated at ([0-9\.]+)/10") {
         $pylintScore = [double]$matches[1]
     }
-    if ($Detailed -and $line -match "^\w+:") {
+    if ($Detailed -and $line -match "^[A-Za-z]+:") {
         Write-Info "  $line"
     }
 }
@@ -163,10 +163,10 @@ $avgComplexity = 0
 $complexFunctions = 0
 
 foreach ($line in $radonOutput -split "`n") {
-    if ($line -match "Average complexity: \w+ \(([\d\.]+)\)") {
+    if ($line -match "Average complexity: [A-Z]+ \(([0-9\.]+)\)") {
         $avgComplexity = [double]$matches[1]
     }
-    if ($line -match "\((\d+)\)" -and $matches[1] -gt 10) {
+    if ($line -match "\(([0-9]+)\)" -and [int]$matches[1] -gt 10) {
         $complexFunctions++
         if ($Detailed) {
             Write-Warning "  $line"
