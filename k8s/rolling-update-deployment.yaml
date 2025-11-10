@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-fitness-rolling
+  namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    deployment-strategy: rolling-update
+    version: v2
+  annotations:
+    kubernetes.io/change-cause: "Rolling update deployment - version 2.0"
+spec:
+  replicas: 4
+  
+  # Rolling Update Strategy Configuration
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Maximum number of pods that can be created over the desired replicas
+      maxUnavailable: 1  # Maximum number of pods that can be unavailable during the update
+  
+  # Minimum time in seconds for which a newly created pod should be ready
+  minReadySeconds: 10
+  
+  # Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 10
+  
+  selector:
+    matchLabels:
+      app: aceest-fitness
+      deployment-strategy: rolling-update
+  
+  template:
+    metadata:
+      labels:
+        app: aceest-fitness
+        deployment-strategy: rolling-update
+        version: v2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Graceful shutdown period
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+      - name: aceest-fitness
+        image: anildora/aceest-fitness:2.1  # Specific version tag
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        
+        env:
+        - name: PORT
+          value: "8000"
+        - name: VERSION
+          value: "2.0"
+        - name: DEPLOYMENT_STRATEGY
+          value: "rolling-update"
+        
+        envFrom:
+        - configMapRef:
+            name: aceest-fitness-config
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        
+        # Liveness probe - restarts container if unhealthy
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Readiness probe - removes pod from service if not ready
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Startup probe - allows slow-starting containers more time
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30  # 150 seconds max startup time
+        
+        # Lifecycle hooks
+        lifecycle:
+          preStop:
+            exec:
+              # Give time for connections to drain before shutdown
+              command: ["/bin/sh", "-c", "sleep 15"]
+        
+        # Security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: false
+      
+      # Pod security context
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      
+      # Restart policy
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-rolling-service
+  namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    deployment-strategy: rolling-update
+spec:
+  type: NodePort
+  selector:
+    app: aceest-fitness
+    deployment-strategy: rolling-update
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours

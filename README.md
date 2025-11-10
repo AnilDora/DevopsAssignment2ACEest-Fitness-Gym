@@ -31,3 +31,62 @@
                      │  └──────────────┘  │
                      └────────────────────┘
 ```
+
+DOCKER IMAGES:
+![alt text](image-1.png)
+
+
+MINIKUBE RUNNING SERVICE:
+
+![alt text](image-12.png)
+
+
+APplication Running Screen shot:
+
+![alt text](image-13.png)
+
+
+MINIKUBE SCREEN SHOT FOR RUNNING PODS:
+
+![alt text](image.png)
+
+SHOWING KUBERNETES DASHBOARD:
+
+![alt text](image-2.png)
+
+
+POD:
+
+![alt text](image-3.png)
+
+SERVICES:
+
+![alt text](image-4.png)
+
+CONFIG MAPS:
+
+![alt text](image-5.png)
+
+Rolling out Deployment:
+
+![alt text](image-6.png)
+
+SCALING PODS:
+
+![alt text](image-7.png)
+
+
+BLUE GREEN DEPLOYMENT:
+
+![alt text](image-8.png)
+
+![alt text](image-10.png)
+
+MINKUBE GET URLS FOR BLUE GREEN:
+
+![alt text](image-11.png)
+
+
+
+
+

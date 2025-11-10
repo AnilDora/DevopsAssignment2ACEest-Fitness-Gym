@@ -1,8 +1,10 @@
-# A/B Testing Deployment Strategy
-# Route traffic based on user attributes or headers
-
 ---
-# Version A Deployment
+# A/B Testing Deployment Strategy
+# Deploy two versions simultaneously and route traffic based on user attributes
+# Version A: Control group (existing features)
+# Version B: Treatment group (new features)
+
+# Version A Deployment (Control - Existing Features)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,53 +12,80 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: version-a
     deployment-strategy: ab-testing
+    version: a
+    variant: control
+  annotations:
+    kubernetes.io/change-cause: "Version A deployment - control group"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: aceest-fitness
-      version: version-a
+      variant: control
   template:
     metadata:
       labels:
         app: aceest-fitness
-        version: version-a
+        deployment-strategy: ab-testing
+        version: a
+        variant: control
+      annotations:
+        ab-test-version: "A"
+        ab-test-features: "baseline"
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v1.0
-        imagePullPolicy: Always
+        image: anildora/aceest-fitness:2.0  # Version A
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
+        - name: PORT
+          value: "8000"
         - name: VERSION
           value: "A"
-        - name: FEATURE_FLAG
-          value: "classic-ui"
+        - name: AB_TEST_VARIANT
+          value: "control"
+        - name: ENABLE_NEW_FEATURE
+          value: "false"
+        - name: DEPLOYMENT_STRATEGY
+          value: "ab-testing"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Version B Deployment
+# Version B Deployment (Treatment - New Features)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,139 +93,169 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: version-b
     deployment-strategy: ab-testing
+    version: b
+    variant: treatment
+  annotations:
+    kubernetes.io/change-cause: "Version B deployment - treatment group"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: aceest-fitness
-      version: version-b
+      variant: treatment
   template:
     metadata:
       labels:
         app: aceest-fitness
-        version: version-b
+        deployment-strategy: ab-testing
+        version: b
+        variant: treatment
+      annotations:
+        ab-test-version: "B"
+        ab-test-features: "new-feature-enabled"
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v2.0
-        imagePullPolicy: Always
+        image: anildora/aceest-fitness:2.1  # Version B with new features
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
+        - name: PORT
+          value: "8000"
         - name: VERSION
           value: "B"
-        - name: FEATURE_FLAG
-          value: "new-ui"
+        - name: AB_TEST_VARIANT
+          value: "treatment"
+        - name: ENABLE_NEW_FEATURE
+          value: "true"
+        - name: DEPLOYMENT_STRATEGY
+          value: "ab-testing"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Service A
+# Unified Service (50/50 split by default)
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-ab-service
+  namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    deployment-strategy: ab-testing
+  annotations:
+    description: "A/B Testing service - distributes traffic 50/50 to both versions"
+spec:
+  type: NodePort
+  selector:
+    app: aceest-fitness
+    deployment-strategy: ab-testing
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  sessionAffinity: ClientIP  # Keeps users on same version during session
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours
+---
+# Version A Service (Direct access to control group)
 apiVersion: v1
 kind: Service
 metadata:
   name: aceest-fitness-version-a
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    variant: control
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: version-a
+    variant: control
   ports:
   - port: 80
-    targetPort: 5000
-
+    targetPort: 8000
+    protocol: TCP
+    name: http
 ---
-# Service B
+# Version B Service (Direct access to treatment group)
 apiVersion: v1
 kind: Service
 metadata:
   name: aceest-fitness-version-b
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    variant: treatment
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: version-b
+    variant: treatment
   ports:
   - port: 80
-    targetPort: 5000
-
----
-# Istio VirtualService for A/B Testing routing
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: aceest-fitness-ab-testing
-  namespace: aceest-fitness
-spec:
-  hosts:
-  - aceest-fitness-ab
-  http:
-  # Route users with "version-b" cookie to Version B
-  - match:
-    - headers:
-        cookie:
-          regex: ".*version=b.*"
-    route:
-    - destination:
-        host: aceest-fitness-version-b
-        port:
-          number: 80
-  # Route users with "premium" header to Version B
-  - match:
-    - headers:
-        x-user-type:
-          exact: "premium"
-    route:
-    - destination:
-        host: aceest-fitness-version-b
-        port:
-          number: 80
-  # Default: 50/50 split for new users
-  - route:
-    - destination:
-        host: aceest-fitness-version-a
-        port:
-          number: 80
-      weight: 50
-    - destination:
-        host: aceest-fitness-version-b
-        port:
-          number: 80
-      weight: 50
-
----
-# Gateway for external access
-apiVersion: v1
-kind: Service
-metadata:
-  name: aceest-fitness-ab
-  namespace: aceest-fitness
-spec:
-  type: LoadBalancer
-  selector:
-    app: aceest-fitness
-  ports:
-  - port: 80
-    targetPort: 5000
+    targetPort: 8000
     protocol: TCP
+    name: http
+---
+# ConfigMap for A/B Test Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ab-test-config
+  namespace: aceest-fitness
+data:
+  # A/B Test Parameters
+  test-name: "feature-rollout-test"
+  test-start-date: "2025-01-01"
+  test-duration-days: "14"
+  
+  # Traffic Split Configuration
+  version-a-weight: "50"
+  version-b-weight: "50"
+  
+  # Feature Flags
+  enable-new-ui: "true"
+  enable-analytics: "true"
+  
+  # Metrics to Track
+  metrics: |
+    - conversion_rate
+    - bounce_rate
+    - session_duration
+    - error_rate
+    - response_time

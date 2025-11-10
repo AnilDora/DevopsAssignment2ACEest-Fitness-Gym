@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:latest
+        image: "anildora/aceest-fitness:latest"
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -105,7 +105,7 @@ metadata:
   labels:
     app: aceest-fitness
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: aceest-fitness
   ports:
@@ -115,7 +115,7 @@ spec:
     name: http
   sessionAffinity: ClientIP
 ---
-apiVersion: autoscaling/v2
+apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: aceest-fitness-hpa
@@ -127,16 +127,4 @@ spec:
     name: aceest-fitness-deployment
   minReplicas: 2
   maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+  targetCPUUtilizationPercentage: 70

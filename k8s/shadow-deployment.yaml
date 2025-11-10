@@ -1,9 +1,8 @@
-# Shadow Deployment Strategy
-# Deploy shadow version alongside production for testing without affecting users
-# NOTE: This version uses standard Kubernetes (no Istio required)
-# For traffic mirroring, you can use a sidecar proxy or manually test the shadow deployment
-
 ---
+# Shadow Deployment Strategy for Minikube
+# Deploy shadow version alongside production for testing without affecting users
+# Shadow deployment receives no production traffic but can be tested independently
+
 # Production Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -12,51 +11,75 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: production
     deployment-strategy: shadow
+    version: production
+    track: production
+  annotations:
+    kubernetes.io/change-cause: "Production deployment - version 1.0"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: aceest-fitness
-      version: production
+      track: production
   template:
     metadata:
       labels:
         app: aceest-fitness
+        deployment-strategy: shadow
         version: production
+        track: production
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v1.0
-        imagePullPolicy: Always
+        image: anildora/aceest-fitness:2.0  # Production version
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
+        - name: PORT
+          value: "8000"
         - name: VERSION
+          value: "1.0"
+        - name: TRACK
           value: "production"
+        - name: DEPLOYMENT_STRATEGY
+          value: "shadow"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Shadow Deployment (receives mirrored traffic)
+# Shadow Deployment (parallel version for testing)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,165 +87,145 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: shadow
     deployment-strategy: shadow
+    version: shadow
+    track: shadow
+  annotations:
+    kubernetes.io/change-cause: "Shadow deployment - testing version 2.0"
+    description: "Shadow deployment receives no production traffic"
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: aceest-fitness
-      version: shadow
+      track: shadow
   template:
     metadata:
       labels:
         app: aceest-fitness
+        deployment-strategy: shadow
         version: shadow
+        track: shadow
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v2.0  # New version being tested
-        imagePullPolicy: Always
+        image: anildora/aceest-fitness:2.1  # Shadow version (new)
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
+        - name: PORT
+          value: "8000"
         - name: VERSION
+          value: "2.0"
+        - name: TRACK
           value: "shadow"
-        - name: LOG_LEVEL
-          value: "DEBUG"  # More verbose logging for analysis
+        - name: DEPLOYMENT_STRATEGY
+          value: "shadow"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Production Service
+# Production Service (receives all user traffic)
 apiVersion: v1
 kind: Service
 metadata:
-  name: aceest-fitness-production
+  name: aceest-fitness-production-service
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    track: production
+  annotations:
+    description: "Production service - receives all user traffic"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: production
+    track: production
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
     protocol: TCP
-
+    name: http
 ---
-# Shadow Service (internal only)
+# Shadow Service (for testing shadow deployment independently)
 apiVersion: v1
 kind: Service
 metadata:
-  name: aceest-fitness-shadow
+  name: aceest-fitness-shadow-service
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    track: shadow
+  annotations:
+    description: "Shadow service - for testing only, receives no production traffic"
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: shadow
+    track: shadow
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
     protocol: TCP
-
+    name: http
 ---
-# NetworkPolicy to allow shadow deployment to receive test traffic
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: aceest-fitness-shadow-policy
-  namespace: aceest-fitness
-spec:
-  podSelector:
-    matchLabels:
-      app: aceest-fitness
-      version: shadow
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: aceest-fitness
-    ports:
-    - protocol: TCP
-      port: 5000
-
----
-# ConfigMap for testing shadow deployment
+# ConfigMap with test script for comparing production vs shadow
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: shadow-test-config
+  name: shadow-test-script
   namespace: aceest-fitness
 data:
-  test-script.sh: |
+  test-shadow.sh: |
     #!/bin/bash
-    # Script to test shadow deployment
-    PRODUCTION_URL="http://aceest-fitness-production/health"
-    SHADOW_URL="http://aceest-fitness-shadow/health"
+    # Script to test and compare production vs shadow deployments
     
-    echo "Testing Production:"
-    curl -s $PRODUCTION_URL
+    PRODUCTION_URL="http://aceest-fitness-production-service"
+    SHADOW_URL="http://aceest-fitness-shadow-service"
     
-    echo -e "\n\nTesting Shadow:"
-    curl -s $SHADOW_URL
+    echo "Testing Production Deployment..."
+    curl -s $PRODUCTION_URL/health | jq .
     
-    echo -e "\n\nComparison complete!"
-
----
-# OPTIONAL: Uncomment below if you have Istio installed
-# ---
-# # Istio VirtualService for traffic mirroring
-# apiVersion: networking.istio.io/v1beta1
-# kind: VirtualService
-# metadata:
-#   name: aceest-fitness-shadow-vs
-#   namespace: aceest-fitness
-# spec:
-#   hosts:
-#   - aceest-fitness-production
-#   http:
-#   - route:
-#     - destination:
-#         host: aceest-fitness-production
-#         port:
-#           number: 80
-#       weight: 100
-#     mirror:
-#       host: aceest-fitness-shadow
-#       port:
-#         number: 80
-#     mirrorPercentage:
-#       value: 100.0  # Mirror 100% of traffic to shadow
-# 
-# ---
-# # DestinationRule for load balancing
-# apiVersion: networking.istio.io/v1beta1
-# kind: DestinationRule
-# metadata:
-#   name: aceest-fitness-shadow-dr
-#   namespace: aceest-fitness
-# spec:
-#   host: aceest-fitness-production
-#   trafficPolicy:
-#     loadBalancer:
-#       simple: ROUND_ROBIN
+    echo "Testing Shadow Deployment..."
+    curl -s $SHADOW_URL/health | jq .
+    
+    echo "Comparing response times..."
+    echo "Production:"
+    time curl -s $PRODUCTION_URL/health > /dev/null
+    
+    echo "Shadow:"
+    time curl -s $SHADOW_URL/health > /dev/null

@@ -1,8 +1,5 @@
-# Blue-Green Deployment Strategy for ACEest Fitness
-# This allows zero-downtime deployments by maintaining two identical environments
-
 ---
-# Blue Environment (Current/Stable)
+# Blue Deployment (Current/Stable Version)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,53 +7,75 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: blue
     deployment-strategy: blue-green
+    version: blue
+    slot: blue
+  annotations:
+    kubernetes.io/change-cause: "Blue deployment - stable version 1.0"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: aceest-fitness
-      version: blue
+      slot: blue
   template:
     metadata:
       labels:
         app: aceest-fitness
+        deployment-strategy: blue-green
         version: blue
+        slot: blue
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v1.0  # Stable version
-        imagePullPolicy: Always
+        image: "anildora/aceest-fitness:2.0"  # Stable version
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
-        - name: FLASK_ENV
-          value: "production"
+        - name: PORT
+          value: "8000"
         - name: VERSION
-          value: "blue-v1.0"
+          value: "1.0"
+        - name: DEPLOYMENT_SLOT
+          value: "blue"
+        - name: DEPLOYMENT_STRATEGY
+          value: "blue-green"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Green Environment (New Version)
+# Green Deployment (New Version for Testing)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,99 +83,133 @@ metadata:
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
-    version: green
     deployment-strategy: blue-green
+    version: green
+    slot: green
+  annotations:
+    kubernetes.io/change-cause: "Green deployment - new version 2.0"
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: aceest-fitness
-      version: green
+      slot: green
   template:
     metadata:
       labels:
         app: aceest-fitness
+        deployment-strategy: blue-green
         version: green
+        slot: green
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: aceest-fitness
-        image: yourdockerhub/aceest-fitness:v2.0  # New version
-        imagePullPolicy: Always
+        image: anildora/aceest-fitness:2.1  # New version
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
+          name: http
         env:
-        - name: FLASK_ENV
-          value: "production"
+        - name: PORT
+          value: "8000"
         - name: VERSION
-          value: "green-v2.0"
+          value: "2.0"
+        - name: DEPLOYMENT_SLOT
+          value: "green"
+        - name: DEPLOYMENT_STRATEGY
+          value: "blue-green"
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
-
+          timeoutSeconds: 3
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
 ---
-# Service - Initially points to Blue (stable)
+# Production Service (Initially points to BLUE)
 apiVersion: v1
 kind: Service
 metadata:
-  name: aceest-fitness-bluegreen
+  name: aceest-fitness-bluegreen-service
   namespace: aceest-fitness
   labels:
     app: aceest-fitness
+    deployment-strategy: blue-green
+  annotations:
+    description: "Production service - switch selector between blue and green"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: blue  # Change to 'green' to switch traffic
+    slot: blue  # CHANGE THIS TO 'green' TO SWITCH TRAFFIC
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
     protocol: TCP
     name: http
-
+  sessionAffinity: ClientIP
 ---
-# Blue Service (for testing)
+# Blue Testing Service (Direct access to Blue deployment)
 apiVersion: v1
 kind: Service
 metadata:
   name: aceest-fitness-blue-test
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    slot: blue
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: blue
+    slot: blue
   ports:
   - port: 80
-    targetPort: 5000
-
+    targetPort: 8000
+    protocol: TCP
+    name: http
 ---
-# Green Service (for testing)
+# Green Testing Service (Direct access to Green deployment)
 apiVersion: v1
 kind: Service
 metadata:
   name: aceest-fitness-green-test
   namespace: aceest-fitness
+  labels:
+    app: aceest-fitness
+    slot: green
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: aceest-fitness
-    version: green
+    slot: green
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
+    protocol: TCP
+    name: http
