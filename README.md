@@ -31,7 +31,7 @@
                      │  └──────────────┘  │
                      └────────────────────┘
 ```
-SONAR SCAN REPORT(Running locally):
+## SONAR SCAN REPORT(Running locally):
 
 ![alt text](image-21.png)
 
@@ -41,69 +41,69 @@ SONAR SCAN REPORT(Running locally):
 
 ![alt text](image-24.png)
 
-UNIT TEST CASE REPORT:
+## UNIT TEST CASE REPORT:
 
 ![alt text](image-20.png)
 
 ![alt text](image-19.png)
 
-DOCKER IMAGES:
+## DOCKER IMAGES:
 ![alt text](image-1.png)
 
 
-MINIKUBE RUNNING SERVICE:
+## MINIKUBE RUNNING SERVICE:
 
 ![alt text](image-12.png)
 
 
-APplication Running Screen shot:
+## Application Running Screen shot:
 
 ![alt text](image-13.png)
 
 
-MINIKUBE SCREEN SHOT FOR RUNNING PODS:
+## MINIKUBE SCREEN SHOT FOR RUNNING PODS:
 
 ![alt text](image.png)
 
-SHOWING KUBERNETES DASHBOARD:
+## SHOWING KUBERNETES DASHBOARD:
 
 ![alt text](image-2.png)
 
 
-POD:
+## POD:
 
 ![alt text](image-3.png)
 
-SERVICES:
+## SERVICES:
 
 ![alt text](image-4.png)
 
-CONFIG MAPS:
+## CONFIG MAPS:
 
 ![alt text](image-5.png)
 
-Rolling out Deployment:
+## Rolling out Deployment:
 
 ![alt text](image-6.png)
 
-SCALING PODS:
+## SCALING PODS:
 
 ![alt text](image-7.png)
 
 
-BLUE GREEN DEPLOYMENT:
+## BLUE GREEN DEPLOYMENT:
 
 
 ![alt text](image-16.png)
 
-CANARY DEPLOYMENT:
+## CANARY DEPLOYMENT:
 
 
 
 
 
 
-Shadow Deployment:
+## Shadow Deployment:
 
 
 
